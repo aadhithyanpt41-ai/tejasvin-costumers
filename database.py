@@ -18,6 +18,7 @@ def init_db():
         
     try:
         # Get config from environment variables
+        cred_json = os.environ.get('FIREBASE_CREDENTIALS_JSON')
         cred_path = os.environ.get('FIREBASE_CREDENTIALS_PATH', 'firebase-credentials.json')
         db_url = os.environ.get('FIREBASE_DATABASE_URL')
         
@@ -26,13 +27,23 @@ def init_db():
             print("Running in mock mode (Returning dummy data). Set FIREBASE_DATABASE_URL to connect to real database.")
             return False
             
-        if not os.path.exists(cred_path):
-            print(f"WARNING: Firebase credentials file not found at {cred_path}")
-            print("Running in mock mode. Please add your firebase-credentials.json file.")
+        cred = None
+        if cred_json:
+            import json
+            try:
+                cred_dict = json.loads(cred_json)
+                cred = credentials.Certificate(cred_dict)
+            except Exception as e:
+                print(f"Error parsing FIREBASE_CREDENTIALS_JSON: {e}")
+                return False
+        elif os.path.exists(cred_path):
+            cred = credentials.Certificate(cred_path)
+        else:
+            print(f"WARNING: Firebase credentials not found in env or at {cred_path}")
+            print("Running in mock mode. Please add your firebase credentials.")
             return False
             
         # Initialize Firebase
-        cred = credentials.Certificate(cred_path)
         firebase_admin.initialize_app(cred, {
             'databaseURL': db_url
         })
