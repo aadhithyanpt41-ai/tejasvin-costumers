@@ -166,6 +166,112 @@ def cancel_order(order_id):
         print(f"Error cancelling order {order_id}: {e}")
         return False
 
+# ── CMS: PRODUCTS ─────────────────────────────────────────────────────────────
+
+def get_all_products():
+    """Retrieve all products from Firebase"""
+    if not _firebase_initialized:
+        return []
+    try:
+        ref = db.reference('products')
+        products_dict = ref.get()
+        if not products_dict:
+            return []
+        products = []
+        for p_id, p_data in products_dict.items():
+            p_data['id'] = p_id
+            products.append(p_data)
+        return products
+    except Exception as e:
+        print(f"Error fetching products: {e}")
+        return []
+
+def add_product(product_data):
+    """Add a new product"""
+    if not _firebase_initialized:
+        return None
+    try:
+        ref = db.reference('products').push()
+        ref.set(product_data)
+        return ref.key
+    except Exception as e:
+        print(f"Error adding product: {e}")
+        return None
+
+def update_product(product_id, product_data):
+    """Update an existing product"""
+    if not _firebase_initialized:
+        return False
+    try:
+        ref = db.reference(f'products/{product_id}')
+        if not ref.get():
+            return False
+        ref.update(product_data)
+        return True
+    except Exception as e:
+        print(f"Error updating product {product_id}: {e}")
+        return False
+
+def delete_product(product_id):
+    """Delete a product"""
+    if not _firebase_initialized:
+        return False
+    try:
+        ref = db.reference(f'products/{product_id}')
+        ref.delete()
+        return True
+    except Exception as e:
+        print(f"Error deleting product {product_id}: {e}")
+        return False
+
+# ── CMS: SETTINGS & CONTENT ───────────────────────────────────────────────────
+
+def get_site_settings():
+    """Retrieve site settings (ImgBB key, admin emails, etc.)"""
+    if not _firebase_initialized:
+        return {}
+    try:
+        ref = db.reference('settings')
+        return ref.get() or {}
+    except Exception as e:
+        print(f"Error fetching settings: {e}")
+        return {}
+
+def update_site_settings(settings_data):
+    """Update site settings"""
+    if not _firebase_initialized:
+        return False
+    try:
+        ref = db.reference('settings')
+        ref.update(settings_data)
+        return True
+    except Exception as e:
+        print(f"Error updating settings: {e}")
+        return False
+
+def get_site_content():
+    """Retrieve dynamic site content (paragraphs, headings)"""
+    if not _firebase_initialized:
+        return {}
+    try:
+        ref = db.reference('content')
+        return ref.get() or {}
+    except Exception as e:
+        print(f"Error fetching content: {e}")
+        return {}
+
+def update_site_content(content_key, content_value):
+    """Update a specific piece of site content"""
+    if not _firebase_initialized:
+        return False
+    try:
+        ref = db.reference(f'content/{content_key}')
+        ref.set(content_value)
+        return True
+    except Exception as e:
+        print(f"Error updating content {content_key}: {e}")
+        return False
+
 # ── ACTIVITY TRACKING ─────────────────────────────────────────────────────────
 
 def log_activity(event_data: dict):

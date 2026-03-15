@@ -4,7 +4,10 @@ from flask_cors import CORS
 from database import (
     get_all_orders, get_order, create_order,
     update_order_status, cancel_order, init_db,
-    log_activity, get_activity_logs
+    log_activity, get_activity_logs,
+    get_all_products, add_product, update_product, delete_product,
+    get_site_settings, update_site_settings,
+    get_site_content, update_site_content
 )
 
 app = Flask(__name__)
@@ -93,6 +96,85 @@ def cancel_order_endpoint(order_id):
         return jsonify({"success": False, "error": "Cannot cancel this order"}), 400
     except Exception as e:
         print(f"Error cancelling order: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# ── CMS: PRODUCTS ─────────────────────────────────────────────────────────────
+
+@app.route('/api/products', methods=['GET'])
+def fetch_products():
+    """Fetch all products."""
+    try:
+        products = get_all_products()
+        return jsonify({"success": True, "data": products}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/products', methods=['POST'])
+def create_product():
+    """Create a new product."""
+    try:
+        data = request.json or {}
+        required = ['title', 'price', 'image']
+        if not all(k in data for k in required):
+            return jsonify({"success": False, "error": "Missing required fields"}), 400
+            
+        product_id = add_product(data)
+        if product_id:
+            return jsonify({"success": True, "id": product_id}), 201
+        return jsonify({"success": False, "error": "Failed to create product"}), 500
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/products/<product_id>', methods=['PUT', 'DELETE'])
+def modify_product(product_id):
+    """Update or delete a product."""
+    try:
+        if request.method == 'DELETE':
+            success = delete_product(product_id)
+            return jsonify({"success": success})
+        else:
+            data = request.json or {}
+            success = update_product(product_id, data)
+            return jsonify({"success": success})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# ── CMS: SETTINGS & CONTENT ───────────────────────────────────────────────────
+
+@app.route('/api/settings', methods=['GET', 'POST'])
+def handle_settings():
+    """Get or update site settings."""
+    try:
+        if request.method == 'GET':
+            settings = get_site_settings()
+            return jsonify({"success": True, "data": settings}), 200
+        else:
+            data = request.json or {}
+            success = update_site_settings(data)
+            return jsonify({"success": success}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/content', methods=['GET'])
+def fetch_content():
+    """Fetch all dynamic content."""
+    try:
+        content = get_site_content()
+        return jsonify({"success": True, "data": content}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/content/<content_key>', methods=['PUT'])
+def modify_content(content_key):
+    """Update a specific content block."""
+    try:
+        data = request.json or {}
+        value = data.get('value')
+        if value is None:
+            return jsonify({"success": False, "error": "Missing value"}), 400
+        success = update_site_content(content_key, value)
+        return jsonify({"success": success}), 200
+    except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
 # ── ACTIVITY TRACKING ─────────────────────────────────────────────────────────
