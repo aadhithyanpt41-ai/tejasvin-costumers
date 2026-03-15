@@ -11,13 +11,8 @@ from database import (
 )
 
 app = Flask(__name__)
-CORS(app, origins=[
-    "https://tejasvin.in",
-    "https://www.tejasvin.in",
-    "https://orders.tejasvin.in",
-    "http://localhost",
-    "http://127.0.0.1",
-])
+# Allow CORS from everywhere so local file:// testing works
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Initialize DB connection on startup
 init_db()
